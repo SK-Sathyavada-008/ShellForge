@@ -4,9 +4,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include "builtins.h"
+#include "history.h"
 
 /*
- * Checks if the command is one of the built-ins supported in Review 2.
+ * Checks if the command is one of the built-ins supported by ShellForge.
  */
 int is_builtin(const char *cmd) {
     if (cmd == NULL) {
@@ -14,7 +15,8 @@ int is_builtin(const char *cmd) {
     }
     if (strcmp(cmd, "cd") == 0 ||
         strcmp(cmd, "pwd") == 0 ||
-        strcmp(cmd, "exit") == 0) {
+        strcmp(cmd, "exit") == 0 ||
+        strcmp(cmd, "history") == 0) {
         return 1;
     }
     return 0;
@@ -66,8 +68,18 @@ int builtin_pwd(char **args) {
  */
 int builtin_exit(char **args) {
     (void)args; /* Unused parameter */
+    history_cleanup();
     printf("Goodbye!\n");
     exit(EXIT_SUCCESS);
+    return 0;
+}
+
+/*
+ * Built-in 'history': displays previous command history.
+ */
+int builtin_history(char **args) {
+    (void)args;
+    history_print();
     return 0;
 }
 
@@ -75,7 +87,7 @@ int builtin_exit(char **args) {
  * Routes and executes the matching built-in command.
  */
 int execute_builtin(char **args) {
-    if (args[0] == NULL) {
+    if (args == NULL || args[0] == NULL) {
         return 0;
     }
 
@@ -85,6 +97,8 @@ int execute_builtin(char **args) {
         return builtin_pwd(args);
     } else if (strcmp(args[0], "exit") == 0) {
         return builtin_exit(args);
+    } else if (strcmp(args[0], "history") == 0) {
+        return builtin_history(args);
     }
 
     return 0;

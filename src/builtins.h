@@ -2,7 +2,7 @@
 #define BUILTINS_H
 
 /*
- * Checks if the given command is a ShellForge built-in (cd, pwd, exit).
+ * Checks if the given command is a ShellForge built-in (cd, pwd, exit, history).
  * Returns 1 if built-in, 0 otherwise.
  */
 int is_builtin(const char *cmd);
@@ -17,5 +17,6 @@ int execute_builtin(char **args);
 int builtin_cd(char **args);
 int builtin_pwd(char **args);
 int builtin_exit(char **args);
+int builtin_history(char **args);
 
 #endif /* BUILTINS_H */
