@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShellForge - Live Demo Runner</title>
+  <meta name="description" content="Interactive ShellForge demo runner with typing-enabled bash terminal on left (3/4th) and scrollable copy cards on right (1/4th).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0d14;
+      --bg-secondary: #101626;
+      --bg-card: rgba(18, 24, 40, 0.88);
+      --bg-card-hover: rgba(26, 35, 58, 0.98);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(56, 189, 248, 0.35);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-cyan: #38bdf8;
+      --accent-green: #10b981;
+      --accent-purple: #a855f7;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --terminal-bg: #0d1117;
+      --terminal-header: #161b22;
+      --terminal-text: #c9d1d9;
+      --terminal-prompt-shell: #34d399;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-glow: 0 0 30px rgba(56, 189, 248, 0.12);
+      --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.07) 0%, transparent 40%);
+    }
+
+    /* Top Navbar */
+    header.top-navbar {
+      flex-shrink: 0;
+      padding: 12px 24px;
+      background: rgba(16, 22, 38, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    h1.brand-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 30%, #38bdf8 70%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      max-width: 650px;
+      justify-content: flex-end;
+    }
+
+    .progress-bar-outer {
+      flex: 1;
+      max-width: 200px;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar-inner {
+      height: 100%;
+      width: 3%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+    }
+
+    .progress-label {
+      font-size: 0.8rem;
+      font-family: 'Fira Code', monospace;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      outline: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--accent-cyan);
+    }
+
+    /* Main Workspace: 3/4 Terminal Left, 1/4 Commands Right */
+    .main-workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 3fr 1fr;
+      gap: 16px;
+      padding: 16px 20px 20px;
+      height: calc(100vh - 65px);
+      overflow: hidden;
+    }
+
+    @media (max-width: 1100px) {
+      .main-workspace {
+        grid-template-columns: 2.3fr 1.2fr;
+      }
+    }
+
+    /* Left Pane: Interactive Bash Terminal */
+    .terminal-pane {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: var(--terminal-bg);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+      overflow: hidden;
+      font-family: 'Fira Code', monospace;
+      cursor: text;
+    }
+
+    .terminal-header-bar {
+      flex-shrink: 0;
+      background: var(--terminal-header);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      cursor: default;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .window-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot-close { background: #ff5f56; }
+    .dot-minimize { background: #ffbd2e; }
+    .dot-maximize { background: #27c93f; }
+
+    .window-title {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .terminal-header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .term-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .term-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .terminal-screen {
+      flex: 1;
+      padding: 18px 22px;
+      overflow-y: auto;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      color: var(--terminal-text);
+      scroll-behavior: smooth;
+    }
+
+    .terminal-screen::-webkit-scrollbar {
+      width: 7px;
+    }
+    .terminal-screen::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.25);
+    }
+    .terminal-screen::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    .term-banner {
+      color: #38bdf8;
+      font-weight: 700;
+      margin-bottom: 12px;
+      white-space: pre;
+    }
+
+    .term-log {
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+
+    .term-prompt-shell {
+      color: var(--terminal-prompt-shell);
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .term-cmd {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+
+    .term-out {
+      color: #94a3b8;
+      white-space: pre-wrap;
+      margin-left: 4px;
+    }
+
+    .term-out.out-success { color: #34d399; }
+    .term-out.out-err { color: #f87171; }
+    .term-out.out-bg { color: #fbbf24; }
+
+    /* Interactive Active Prompt Row with Real Typing Input */
+    .active-input-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .shell-input-field {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #f1f5f9;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.92rem;
+      font-weight: 600;
+      caret-color: var(--accent-cyan);
+      padding: 0;
+      margin: 0;
+    }
+
+    .terminal-footer-bar {
+      flex-shrink: 0;
+      background: #111620;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      cursor: default;
+    }
+
+    .active-badge {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* Right Pane: 1/4 Scrollable Commands List */
+    .commands-pane {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .commands-pane-header {
+      flex-shrink: 0;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pane-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pane-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pane-count {
+      font-size: 0.75rem;
+      color: var(--accent-cyan);
+      font-family: 'Fira Code', monospace;
+    }
+
+    .search-input-box {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      color: var(--text-main);
+      font-size: 0.8rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input-box:focus {
+      border-color: var(--accent-cyan);
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .category-scroll-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .category-scroll-bar::-webkit-scrollbar {
+      height: 4px;
+    }
+    .category-scroll-bar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+    }
+
+    .cat-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .cat-pill:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .cat-pill.active {
+      background: var(--accent-cyan);
+      color: #04101e;
+      border-color: var(--accent-cyan);
+      font-weight: 600;
+    }
+
+    /* Scrollable Commands List */
+    .commands-scroll-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .commands-scroll-list::-webkit-scrollbar {
+      width: 7px;
+    }
+    .commands-scroll-list::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .commands-scroll-list::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.35);
+      border-radius: 4px;
+    }
+    .commands-scroll-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.6);
+    }
+
+    /* Command Card Structure */
+    .cmd-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .cmd-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-accent);
+    }
+
+    .cmd-card.is-active-step {
+      border-color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.06);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.2);
+    }
+
+    .cmd-card.is-active-step::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--accent-cyan);
+      border-top-left-radius: var(--radius-sm);
+      border-bottom-left-radius: var(--radius-sm);
+    }
+
+    .cmd-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .cmd-step-badge {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .cmd-cat-tag {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    .tag-builtin { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .tag-pipe { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+    .tag-redirect { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .tag-background { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .tag-signal { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+    .tag-history { background: rgba(20, 184, 166, 0.15); color: #2dd4bf; }
+    .tag-error { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+    .cmd-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    /* Command snippet row with 1-click copy */
+    .cmd-code-row {
+      background: #090d16;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 5px;
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .cmd-code-text {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #38bdf8;
+      word-break: break-all;
+    }
+
+    .btn-card-copy {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent-cyan);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-card-copy:hover {
+      background: var(--accent-cyan);
+      color: #04101e;
+    }
+
+    .btn-card-copy.copied {
+      background: var(--accent-green) !important;
+      color: #04101e !important;
+      border-color: var(--accent-green) !important;
+    }
+
+    /* Single-line explanation under command & above output */
+    .cmd-one-line-desc {
+      font-size: 0.76rem;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      line-height: 1.4;
+      display: block;
+    }
+
+    .cmd-expected-preview {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.74rem;
+      color: #a7f3d0;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 52px;
+      overflow-y: auto;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: #0f172a;
+      border: 1px solid var(--accent-green);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(16, 185, 129, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast-icon {
+      color: var(--accent-green);
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar with ShellForge on top -->
+  <header class="top-navbar">
+    <div class="brand-section">
+      <h1 class="brand-title">ShellForge</h1>
+      <div class="brand-badge">
+        <span class="dot"></span> Live Demo Runner
+      </div>
+    </div>
+
+    <!-- Controls & Progress -->
+    <div class="top-controls">
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progressBar"></div>
+      </div>
+      <span class="progress-label" id="progressText">Step 1 / 30 (0%)</span>
+      <button class="btn btn-outline" id="btnPrev">← Prev</button>
+      <button class="btn btn-primary" id="btnCopyNext">📋 Copy & Next</button>
+      <button class="btn btn-outline" id="btnNext">Next →</button>
+      <button class="btn btn-outline" id="btnReset">↺ Reset</button>
+    </div>
+  </header>
+
+  <!-- Main Workspace: 3/4 Terminal Left, 1/4 Scrollable Commands Right -->
+  <main class="main-workspace">
+
+    <!-- Left: 3/4 Bash Terminal (User can type, paste, and run) -->
+    <section class="terminal-pane" id="terminalPane" onclick="focusShellInput()">
+      <div class="terminal-header-bar">
+        <div class="window-dots">
+          <span class="window-dot dot-close"></span>
+          <span class="window-dot dot-minimize"></span>
+          <span class="window-dot dot-maximize"></span>
+        </div>
+        <div class="window-title">
+          <span>💻</span> ShellForge REPL (Click anywhere to type / paste)
+        </div>
+        <div class="terminal-header-actions">
+          <button class="term-btn" id="btnClearTerm">Clear</button>
+        </div>
+      </div>
+
+      <div class="terminal-screen" id="terminalScreen">
+        <div class="term-banner">================================
+          SHELLFORGE            
+================================</div>
+        <!-- History logs will appear here -->
+        <div id="terminalLogs"></div>
+
+        <!-- Active interactive typing line -->
+        <div class="active-input-row" id="activeInputRow">
+          <span class="term-prompt-shell">ShellForge&gt; </span>
+          <input type="text" id="shellInput" class="shell-input-field" autocomplete="off" spellcheck="false" autofocus>
+        </div>
+      </div>
+
+      <div class="terminal-footer-bar">
+        <div>
+          <span>Target Command: </span>
+          <span class="active-badge" id="activeBadgeText">Step 1: pwd</span>
+        </div>
+        <span style="font-size: 0.72rem; color: #64748b;">Type directly in shell, or copy from right & paste</span>
+      </div>
+    </section>
+
+    <!-- Right: 1/4 Scrollable Commands List (Same Height as Terminal) -->
+    <section class="commands-pane">
+      <div class="commands-pane-header">
+        <div class="pane-title-row">
+          <span class="pane-title">📋 Commands Sequence</span>
+          <span class="pane-count" id="paneCountLabel">30 Steps</span>
+        </div>
+
+        <input type="text" id="searchInput" class="search-input-box" placeholder="Filter commands...">
+
+        <div class="category-scroll-bar" id="categoryPills">
+          <button class="cat-pill active" data-cat="all">All</button>
+          <button class="cat-pill" data-cat="builtin">Built-ins</button>
+          <button class="cat-pill" data-cat="pipe">Pipes</button>
+          <button class="cat-pill" data-cat="redirect">Redirect</button>
+          <button class="cat-pill" data-cat="combo">Combined</button>
+          <button class="cat-pill" data-cat="background">Background</button>
+          <button class="cat-pill" data-cat="signal">Signals</button>
+          <button class="cat-pill" data-cat="history">History</button>
+          <button class="cat-pill" data-cat="error">Errors</button>
+          <button class="cat-pill" data-cat="exit">Exit</button>
+        </div>
+      </div>
+
+      <!-- Scrollable Commands List -->
+      <div class="commands-scroll-list" id="commandsList">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <span class="toast-icon">✓</span>
+    <span id="toastMsg">Command copied to clipboard!</span>
+  </div>
+
+  <script>
+    /* Complete 30 Demo Commands (Build steps removed, starting from ShellForge>) */
+    const DEMO_COMMANDS = [
+      /* Phase 1: Review 2 Baseline Built-ins & Process Lifecycle */
+      {
+        step: 1,
+        title: "Print Working Directory",
+        cmd: "pwd",
+        category: "builtin",
+        categoryLabel: "Built-in",
+        tagClass: "tag-builtin",
+        oneLiner: "Prints the current working directory using the getcwd() system call in the parent process.",
+        expected: "/home/user/shellForge",
+        simOutput: "/home/user/shellForge"
+      },
+      {
+        step: 2,
+        title: "Process Lifecycle Execution",
+        cmd: 'echo "Testing ShellForge Review 3"',
+        category: "builtin",
+        categoryLabel: "Process",
+        tagClass: "tag-builtin",
+        oneLiner: "Demonstrates external command lifecycle via fork(), execvp(), and waitpid() parent synchronization.",
+        expected: "Testing ShellForge Review 3",
+        simOutput: "Testing ShellForge Review 3"
+      },
+      {
+        step: 3,
+        title: "Create Demo Directory",
+        cmd: "mkdir demo_dir",
+        category: "builtin",
+        categoryLabel: "File System",
+        tagClass: "tag-builtin",
+        oneLiner: "Executes external mkdir command to create a new folder named demo_dir in the file system.",
+        expected: "(Returns immediately to prompt)",
+        simOutput: ""
+      },
+      {
+        step: 4,
+        title: "Change Directory (Built-in cd)",
+        cmd: "cd demo_dir",
+        category: "builtin",
+        categoryLabel: "Built-in",
+        tagClass: "tag-builtin",
+        oneLiner: "Changes shell working directory in PARENT process using chdir() system call.",
+        expected: "(Returns immediately to prompt)",
+        simOutput: ""
+      },
+      {
+        step: 5,
+        title: "Verify Directory Changed",
+        cmd: "pwd",
+        category: "builtin",
+        categoryLabel: "Built-in",
+        tagClass: "tag-builtin",
+        oneLiner: "Confirms that the shell working directory is now updated to the demo_dir folder.",
+        expected: "/home/user/shellForge/demo_dir",
+        simOutput: "/home/user/shellForge/demo_dir"
+      },
+      {
+        step: 6,
+        title: "Navigate Back to Parent Directory",
+        cmd: "cd ..",
+        category: "builtin",
+        categoryLabel: "Built-in",
+        tagClass: "tag-builtin",
+        oneLiner: "Navigates the parent shell process back up to the project root directory using chdir(\"..\").",
+        expected: "(Returns immediately to prompt)",
+        simOutput: ""
+      },
+      {
+        step: 7,
+        title: "Clean Up Demo Directory",
+        cmd: "rmdir demo_dir",
+        category: "builtin",
+        categoryLabel: "File System",
+        tagClass: "tag-builtin",
+        oneLiner: "Removes the temporary demo directory cleanly from the file system.",
+        expected: "(Returns immediately to prompt)",
+        simOutput: ""
+      },
+
+      /* Phase 2: Review 3 Pipelines (|) */
+      {
+        step: 8,
+        title: "Single Pipe IPC (ls | grep)",
+        cmd: "ls src | grep .c",
+        category: "pipe",
+        categoryLabel: "Pipeline",
+        tagClass: "tag-pipe",
+        oneLiner: "Connects stdout of ls to stdin of grep using pipe() and dup2() to filter C source files.",
+        expected: "builtins.c\nexecutor.c\nhistory.c\nmain.c\nparser.c",
+        simOutput: "builtins.c\nexecutor.c\nhistory.c\nmain.c\nparser.c"
+      },
+      {
+        step: 9,
+        title: "3-Stage Multi-Pipeline",
+        cmd: "ls src | grep .c | wc -l",
+        category: "pipe",
+        categoryLabel: "Pipeline",
+        tagClass: "tag-pipe",
+        oneLiner: "Chains 3 concurrent processes across 2 kernel pipes (ls -> grep -> wc) to count source files.",
+        expected: "5",
+        simOutput: "5"
+      },
+      {
+        step: 10,
+        title: "Unspaced Pipe Operator Resilience",
+        cmd: "ls|grep parser",
+        category: "pipe",
+        categoryLabel: "Pipeline",
+        tagClass: "tag-pipe",
+        oneLiner: "Demonstrates advanced lexical tokenizer isolating the '|' symbol without requiring whitespace.",
+        expected: "parser.c\nparser.h",
+        simOutput: "parser.c\nparser.h"
+      },
+
+      /* Phase 3: File I/O Redirection (>, >>, <) */
+      {
+        step: 11,
+        title: "Output Redirection - Truncate (>)",
+        cmd: 'echo "System Calls Demo" > demo.txt',
+        category: "redirect",
+        categoryLabel: "Redirect",
+        tagClass: "tag-redirect",
+        oneLiner: "Redirects standard output to demo.txt using open() with O_TRUNC and dup2().",
+        expected: "(Creates demo.txt with 1 line)",
+        simOutput: ""
+      },
+      {
+        step: 12,
+        title: "Verify File Contents",
+        cmd: "cat demo.txt",
+        category: "redirect",
+        categoryLabel: "Redirect",
+        tagClass: "tag-redirect",
+        oneLiner: "Reads and displays demo.txt to verify successful output redirection.",
+        expected: "System Calls Demo",
+        simOutput: "System Calls Demo"
+      },
+      {
+        step: 13,
+        title: "Output Redirection - Append (>>)",
+        cmd: 'echo "Appended Second Line" >> demo.txt',
+        category: "redirect",
+        categoryLabel: "Redirect",
+        tagClass: "tag-redirect",
+        oneLiner: "Appends standard output to demo.txt using open() with O_APPEND without overwriting.",
+        expected: "(Appends second line without overwriting)",
+        simOutput: ""
+      },
+      {
+        step: 14,
+        title: "Verify Appended Contents",
+        cmd: "cat demo.txt",
+        category: "redirect",
+        categoryLabel: "Redirect",
+        tagClass: "tag-redirect",
+        oneLiner: "Displays demo.txt to confirm that both original and appended lines are present.",
+        expected: "System Calls Demo\nAppended Second Line",
+        simOutput: "System Calls Demo\nAppended Second Line"
+      },
+      {
+        step: 15,
+        title: "Input Redirection (<)",
+        cmd: "cat < demo.txt",
+        category: "redirect",
+        categoryLabel: "Redirect",
+        tagClass: "tag-redirect",
+        oneLiner: "Redirects standard input of cat from demo.txt using open() with O_RDONLY and dup2().",
+        expected: "System Calls Demo\nAppended Second Line",
+        simOutput: "System Calls Demo\nAppended Second Line"
+      },
+
+      /* Phase 4: Combined Pipelines and Redirection */
+      {
+        step: 16,
+        title: "Pipeline Output to File",
+        cmd: "ls src | grep .c > c_sources.txt",
+        category: "combo",
+        categoryLabel: "Combined",
+        tagClass: "tag-pipe",
+        oneLiner: "Simultaneously pipes output from ls to grep and directs the final output into c_sources.txt.",
+        expected: "(Writes 5 lines into c_sources.txt)",
+        simOutput: ""
+      },
+      {
+        step: 17,
+        title: "Verify Combined Output File",
+        cmd: "cat c_sources.txt",
+        category: "combo",
+        categoryLabel: "Combined",
+        tagClass: "tag-pipe",
+        oneLiner: "Displays c_sources.txt to confirm that the filtered pipeline stream was saved to disk.",
+        expected: "builtins.c\nexecutor.c\nhistory.c\nmain.c\nparser.c",
+        simOutput: "builtins.c\nexecutor.c\nhistory.c\nmain.c\nparser.c"
+      },
+      {
+        step: 18,
+        title: "Input Redirection Feeding a Pipeline",
+        cmd: "cat < c_sources.txt | grep main",
+        category: "combo",
+        categoryLabel: "Combined",
+        tagClass: "tag-pipe",
+        oneLiner: "Feeds an input-redirected file stream into a pipeline to search for main.",
+        expected: "main.c",
+        simOutput: "main.c"
+      },
+
+      /* Phase 5: Background Execution & Zombie Reaping (&) */
+      {
+        step: 19,
+        title: "Asynchronous Background Execution (&)",
+        cmd: "sleep 3 &",
+        category: "background",
+        categoryLabel: "Background",
+        tagClass: "tag-background",
+        oneLiner: "Executes child asynchronously, immediately printing [Background PID: <PID>] and prompt.",
+        expected: "[Background PID: 12345]\nShellForge> ",
+        simOutput: "[Background PID: 12345]"
+      },
+      {
+        step: 20,
+        title: "Prompt Unblocked Concurrency Check",
+        cmd: "pwd",
+        category: "background",
+        categoryLabel: "Background",
+        tagClass: "tag-background",
+        oneLiner: "Demonstrates that the shell is completely unblocked while sleep runs in the background.",
+        expected: "/home/user/shellForge",
+        simOutput: "/home/user/shellForge"
+      },
+      {
+        step: 21,
+        title: "Non-blocking Zombie Reaper (Wait 3s & Press Enter)",
+        cmd: "",
+        displayCmd: "[Wait 3 seconds, then press Enter]",
+        category: "background",
+        categoryLabel: "Zombie Reaper",
+        tagClass: "tag-background",
+        oneLiner: "Automatic waitpid(-1, &status, WNOHANG) reaps completed background process before next prompt.",
+        expected: "[Process 12345 finished]\nShellForge> ",
+        simOutput: "[Process 12345 finished]"
+      },
+
+      /* Phase 6: Signal Handling (SIGINT / Ctrl+C) */
+      {
+        step: 22,
+        title: "Forwarding SIGINT to Active Child",
+        cmd: "sleep 10",
+        actionNote: "Press Ctrl+C while sleep is running",
+        category: "signal",
+        categoryLabel: "Signals",
+        tagClass: "tag-signal",
+        oneLiner: "Catches SIGINT via sigaction() and forwards via kill(fg_pid, SIGINT). Child dies, shell lives.",
+        expected: "^C\nShellForge> ",
+        simOutput: "^C\nShellForge> "
+      },
+      {
+        step: 23,
+        title: "Graceful SIGINT at Empty Prompt",
+        cmd: "",
+        displayCmd: "[Press Ctrl+C at empty ShellForge> prompt]",
+        category: "signal",
+        categoryLabel: "Signals",
+        tagClass: "tag-signal",
+        oneLiner: "Pressing Ctrl+C when no child is running cleanly prints a newline and refreshes the prompt.",
+        expected: "^C\nShellForge> ",
+        simOutput: "\nShellForge> "
+      },
+
+      /* Phase 7: In-Memory Command History */
+      {
+        step: 24,
+        title: "Display In-Memory Command History",
+        cmd: "history",
+        category: "history",
+        categoryLabel: "History",
+        tagClass: "tag-history",
+        oneLiner: "Calls built-in history command to print numbered sequential list of previous valid commands.",
+        expected: "   1  pwd\n   2  echo \"Testing ShellForge Review 3\"\n   ...\n  15  history",
+        simOutput: "   1  pwd\n   2  echo \"Testing ShellForge Review 3\"\n   3  mkdir demo_dir\n   4  cd demo_dir\n   5  pwd\n   6  cd ..\n   7  rmdir demo_dir\n   8  ls src | grep .c\n   9  ls src | grep .c | wc -l\n  10  ls|grep parser\n  11  echo \"System Calls Demo\" > demo.txt\n  12  cat demo.txt\n  13  echo \"Appended Second Line\" >> demo.txt\n  14  cat demo.txt\n  15  cat < demo.txt\n  16  ls src | grep .c > c_sources.txt\n  17  cat c_sources.txt\n  18  cat < c_sources.txt | grep main\n  19  sleep 3 &\n  20  pwd\n  21  sleep 10\n  22  history"
+      },
+
+      /* Phase 8: Robust Error Handling & Syntax Diagnostics */
+      {
+        step: 25,
+        title: "Invalid Command Error",
+        cmd: "invalidcommand123",
+        category: "error",
+        categoryLabel: "Error",
+        tagClass: "tag-error",
+        oneLiner: "Cleanly catches execvp() failure for unknown program and prints command not found error.",
+        expected: "ShellForge: command not found: invalidcommand123",
+        simOutput: "ShellForge: command not found: invalidcommand123"
+      },
+      {
+        step: 26,
+        title: "Invalid Directory Path Error",
+        cmd: "cd /folder_does_not_exist",
+        category: "error",
+        categoryLabel: "Error",
+        tagClass: "tag-error",
+        oneLiner: "Built-in cd checks chdir() return value and reports standard errno message.",
+        expected: "ShellForge: cd: No such file or directory",
+        simOutput: "ShellForge: cd: No such file or directory"
+      },
+      {
+        step: 27,
+        title: "Missing Redirection Input File Error",
+        cmd: "cat < missing_file.txt",
+        category: "error",
+        categoryLabel: "Error",
+        tagClass: "tag-error",
+        oneLiner: "Detects missing input file descriptor before piping and reports diagnostic error message.",
+        expected: "ShellForge: missing_file.txt: No such file or directory",
+        simOutput: "ShellForge: missing_file.txt: No such file or directory"
+      },
+      {
+        step: 28,
+        title: "Syntax Diagnostic: Incomplete Trailing Pipe",
+        cmd: "ls |",
+        category: "error",
+        categoryLabel: "Syntax Error",
+        tagClass: "tag-error",
+        oneLiner: "Syntax parser identifies trailing pipeline operator with missing right-side command.",
+        expected: "ShellForge: syntax error near unexpected token '|'",
+        simOutput: "ShellForge: syntax error near unexpected token '|'"
+      },
+      {
+        step: 29,
+        title: "Syntax Diagnostic: Missing Redirection Target",
+        cmd: "cat >",
+        category: "error",
+        categoryLabel: "Syntax Error",
+        tagClass: "tag-error",
+        oneLiner: "Syntax validator checks that redirection operator '>' is followed by a valid filename token.",
+        expected: "ShellForge: syntax error near unexpected token 'newline'",
+        simOutput: "ShellForge: syntax error near unexpected token 'newline'"
+      },
+
+      /* Phase 9: Graceful Shell Exit */
+      {
+        step: 30,
+        title: "Graceful Shell Exit",
+        cmd: "exit",
+        category: "exit",
+        categoryLabel: "Exit",
+        tagClass: "tag-builtin",
+        oneLiner: "Frees dynamically allocated history structures, prints Goodbye!, and exits with status 0.",
+        expected: "Goodbye!",
+        simOutput: "Goodbye!"
+      }
+    ];
+
+    /* Shell State Machine */
+    let shellCurrentDir = "/home/user/shellForge";
+    let shellVirtualFiles = {};
+    let shellHistoryList = [];
+    let shellBgPidCounter = 14200;
+    let pendingBgJobs = [];
+
+    /* Navigation State */
+    let currentStepIndex = 0; // 0 to 29
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let commandHistoryNavIndex = -1;
+
+    // DOM Elements
+    const commandsList = document.getElementById('commandsList');
+    const terminalScreen = document.getElementById('terminalScreen');
+    const terminalLogs = document.getElementById('terminalLogs');
+    const shellInput = document.getElementById('shellInput');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const activeBadgeText = document.getElementById('activeBadgeText');
+    const paneCountLabel = document.getElementById('paneCountLabel');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toastMsg');
+    const searchInput = document.getElementById('searchInput');
+    const categoryPills = document.getElementById('categoryPills');
+
+    function init() {
+      renderCards();
+      updateActiveStep(0, false);
+      setupListeners();
+      focusShellInput();
+    }
+
+    function focusShellInput() {
+      if (shellInput) {
+        shellInput.focus();
+      }
+    }
+
+    /* Render Right Side Command Cards */
+    function renderCards() {
+      commandsList.innerHTML = '';
+
+      const filtered = DEMO_COMMANDS.filter(cmd => {
+        const matchesCategory = currentFilter === 'all' || cmd.category === currentFilter;
+        const target = `${cmd.step} ${cmd.cmd} ${cmd.title} ${cmd.oneLiner} ${cmd.expected}`.toLowerCase();
+        const matchesSearch = !searchQuery || target.includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+
+      paneCountLabel.textContent = `${filtered.length} Steps`;
+
+      if (filtered.length === 0) {
+        commandsList.innerHTML = `
+          <div style="text-align: center; padding: 24px 10px; color: var(--text-muted); font-size: 0.8rem;">
+            No commands match "${searchQuery}"
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach((item) => {
+        const isAction = item.cmd === "";
+        const commandText = isAction ? (item.displayCmd || "Press Key") : item.cmd;
+        const isActive = item.step === (currentStepIndex + 1);
+
+        const card = document.createElement('div');
+        card.className = `cmd-card ${isActive ? 'is-active-step' : ''}`;
+        card.id = `cmdCard-${item.step}`;
+
+        card.innerHTML = `
+          <div class="cmd-card-top">
+            <span class="cmd-step-badge">Step ${item.step}</span>
+            <span class="cmd-cat-tag ${item.tagClass}">${escapeHtml(item.categoryLabel)}</span>
+          </div>
+
+          <div class="cmd-title">${escapeHtml(item.title)}</div>
+
+          <!-- Command row with 1-click copy -->
+          <div class="cmd-code-row">
+            <span class="cmd-code-text" style="${isAction ? 'color: #fbbf24; font-style: italic;' : ''}">
+              ${escapeHtml(commandText)}
+            </span>
+            ${!isAction ? `
+              <button class="btn-card-copy" onclick="copyCardCommand('${escapeAttr(item.cmd)}', ${item.step}, this)">
+                📋 Copy
+              </button>
+            ` : `
+              <button class="btn-card-copy" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);" onclick="showToast('Action: ${escapeAttr(item.displayCmd)}')">
+                ℹ️ Action
+              </button>
+            `}
+          </div>
+
+          <!-- One-line explanation under command & above output -->
+          <span class="cmd-one-line-desc">${escapeHtml(item.oneLiner)}</span>
+
+          <!-- Expected Output -->
+          <div class="cmd-expected-preview">${escapeHtml(item.expected)}</div>
+        `;
+
+        card.addEventListener('click', (e) => {
+          if (!e.target.closest('button')) {
+            updateActiveStep(item.step - 1, false);
+            if (item.cmd) {
+              shellInput.value = item.cmd;
+              focusShellInput();
+            }
+          }
+        });
+
+        commandsList.appendChild(card);
+      });
+    }
+
+    /* Update Active Step in Demo */
+    function updateActiveStep(newIndex, scroll = true) {
+      if (newIndex < 0) newIndex = 0;
+      if (newIndex >= DEMO_COMMANDS.length) newIndex = DEMO_COMMANDS.length - 1;
+
+      currentStepIndex = newIndex;
+      const stepNumber = currentStepIndex + 1;
+      const activeCmd = DEMO_COMMANDS[currentStepIndex];
+
+      const percent = Math.round(((stepNumber) / DEMO_COMMANDS.length) * 100);
+      progressBar.style.width = `${percent}%`;
+      progressText.textContent = `Step ${stepNumber} / ${DEMO_COMMANDS.length} (${percent}%)`;
+
+      const isAction = activeCmd.cmd === "";
+      activeBadgeText.textContent = `Step ${stepNumber}: ${isAction ? activeCmd.displayCmd : activeCmd.cmd}`;
+
+      document.querySelectorAll('.cmd-card').forEach(card => card.classList.remove('is-active-step'));
+      const activeCard = document.getElementById(`cmdCard-${stepNumber}`);
+      if (activeCard) {
+        activeCard.classList.add('is-active-step');
+        if (scroll) {
+          activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }
+
+    /* 1-Click Copy on Card */
+    function copyCardCommand(text, step, btnElement) {
+      if (!text) return;
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`Copied: "${text}"`);
+        if (btnElement) {
+          const orig = btnElement.innerHTML;
+          btnElement.innerHTML = '✓ Copied!';
+          btnElement.classList.add('copied');
+          setTimeout(() => {
+            btnElement.innerHTML = orig;
+            btnElement.classList.remove('copied');
+          }, 1400);
+        }
+
+        // Also place into shell input ready for typing or Enter
+        shellInput.value = text;
+        focusShellInput();
+      }).catch(() => {
+        // Fallback copy
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast(`Copied: "${text}"`);
+        shellInput.value = text;
+        focusShellInput();
+      });
+    }
+
+    /* Copy & Advance to Next Step */
+    function copyAndAdvance() {
+      const activeCmd = DEMO_COMMANDS[currentStepIndex];
+      const card = document.getElementById(`cmdCard-${activeCmd.step}`);
+      const btn = card ? card.querySelector('.btn-card-copy') : null;
+
+      if (activeCmd.cmd !== "") {
+        copyCardCommand(activeCmd.cmd, activeCmd.step, btn);
+      } else {
+        showToast(`Action Step ${activeCmd.step}: ${activeCmd.displayCmd}`);
+        shellInput.value = "";
+        focusShellInput();
+      }
+
+      if (currentStepIndex < DEMO_COMMANDS.length - 1) {
+        setTimeout(() => {
+          updateActiveStep(currentStepIndex + 1, true);
+        }, 250);
+      } else {
+        showToast("🎉 All demo commands completed!");
+      }
+    }
+
+    /* Execute Command Typed in Shell */
+    function executeShellLine(inputRaw) {
+      const trimmed = inputRaw.trim();
+
+      // Check if any background jobs finished
+      let reapOutput = "";
+      if (pendingBgJobs.length > 0) {
+        const now = Date.now();
+        const reaped = [];
+        pendingBgJobs = pendingBgJobs.filter(job => {
+          if (now >= job.finishAt) {
+            reaped.push(job.pid);
+            return false;
+          }
+          return true;
+        });
+        if (reaped.length > 0) {
+          reapOutput = reaped.map(pid => `[Process ${pid} finished]`).join("\n");
+        }
+      }
+
+      // Log input command line
+      const logEntry = document.createElement('div');
+      logEntry.className = "term-log";
+      logEntry.innerHTML = `
+        <span class="term-prompt-shell">ShellForge&gt; </span><span class="term-cmd">${escapeHtml(inputRaw)}</span>
+      `;
+      terminalLogs.appendChild(logEntry);
+
+      if (reapOutput) {
+        const reapLog = document.createElement('div');
+        reapLog.className = "term-out out-bg";
+        reapLog.textContent = reapOutput;
+        terminalLogs.appendChild(reapLog);
+      }
+
+      // If empty input (just pressed Enter)
+      if (trimmed === "") {
+        terminalScreen.scrollTop = terminalScreen.scrollHeight;
+        return;
+      }
+
+      // Add to shell history
+      shellHistoryList.push(trimmed);
+      commandHistoryNavIndex = -1;
+
+      // Evaluate Command in Virtual Shell
+      let outputText = "";
+      let outputClass = "term-out";
+
+      // Match against demo steps or execute virtual built-ins
+      const matchingStep = DEMO_COMMANDS.find(c => c.cmd.trim() === trimmed);
+
+      if (trimmed === "pwd") {
+        outputText = shellCurrentDir;
+      } else if (trimmed === "cd demo_dir") {
+        shellCurrentDir = "/home/user/shellForge/demo_dir";
+        outputText = "";
+      } else if (trimmed === "cd .." || trimmed === "cd") {
+        shellCurrentDir = "/home/user/shellForge";
+        outputText = "";
+      } else if (trimmed.startsWith("cd /") || trimmed === "cd nonexistent") {
+        outputText = "ShellForge: cd: No such file or directory";
+        outputClass += " out-err";
+      } else if (trimmed.startsWith("echo ")) {
+        if (trimmed.includes(" > demo.txt")) {
+          shellVirtualFiles["demo.txt"] = "System Calls Demo\n";
+          outputText = "";
+        } else if (trimmed.includes(" >> demo.txt")) {
+          shellVirtualFiles["demo.txt"] = (shellVirtualFiles["demo.txt"] || "") + "Appended Second Line\n";
+          outputText = "";
+        } else {
+          // Standard echo
+          const echoVal = trimmed.replace(/^echo\s+["']?/, '').replace(/["']?$/, '');
+          outputText = echoVal;
+        }
+      } else if (trimmed === "cat demo.txt" || trimmed === "cat < demo.txt") {
+        outputText = (shellVirtualFiles["demo.txt"] || "System Calls Demo\nAppended Second Line").trim();
+      } else if (trimmed === "ls src | grep .c") {
+        outputText = "builtins.c\nexecutor.c\nhistory.c\nmain.c\nparser.c";
+      } else if (trimmed === "ls src | grep .c | wc -l") {
+        outputText = "5";
+      } else if (trimmed === "ls|grep parser") {
+        outputText = "parser.c\nparser.h";
+      } else if (trimmed === "ls src | grep .c > c_sources.txt") {
+        shellVirtualFiles["c_sources.txt"] = "builtins.c\nexecutor.c\nhistory.c\nmain.c\nparser.c";
+        outputText = "";
+      } else if (trimmed === "cat c_sources.txt") {
+        outputText = (shellVirtualFiles["c_sources.txt"] || "builtins.c\nexecutor.c\nhistory.c\nmain.c\nparser.c").trim();
+      } else if (trimmed === "cat < c_sources.txt | grep main") {
+        outputText = "main.c";
+      } else if (trimmed === "sleep 3 &") {
+        shellBgPidCounter++;
+        pendingBgJobs.push({ pid: shellBgPidCounter, finishAt: Date.now() + 3000 });
+        outputText = `[Background PID: ${shellBgPidCounter}]`;
+        outputClass += " out-bg";
+      } else if (trimmed === "sleep 10") {
+        outputText = "^C";
+      } else if (trimmed === "history") {
+        outputText = shellHistoryList.map((cmd, idx) => `   ${idx + 1}  ${cmd}`).join("\n");
+      } else if (trimmed === "exit") {
+        outputText = "Goodbye!";
+        outputClass += " out-success";
+      } else if (matchingStep) {
+        outputText = matchingStep.simOutput;
+        if (matchingStep.category === 'error') outputClass += " out-err";
+      } else {
+        // Generic fallback error
+        outputText = `ShellForge: command not found: ${trimmed.split(" ")[0]}`;
+        outputClass += " out-err";
+      }
+
+      if (outputText) {
+        const outDiv = document.createElement('div');
+        outDiv.className = outputClass;
+        outDiv.textContent = outputText;
+        terminalLogs.appendChild(outDiv);
+      }
+
+      // Advance step indicator if this command matches active step
+      const currentExpectedCmd = DEMO_COMMANDS[currentStepIndex].cmd.trim();
+      if (currentExpectedCmd && trimmed === currentExpectedCmd) {
+        if (currentStepIndex < DEMO_COMMANDS.length - 1) {
+          updateActiveStep(currentStepIndex + 1, true);
+        }
+      }
+
+      terminalScreen.scrollTop = terminalScreen.scrollHeight;
+    }
+
+    /* Clear Terminal Screen */
+    function clearTerminal() {
+      terminalLogs.innerHTML = "";
+      shellInput.value = "";
+      focusShellInput();
+    }
+
+    /* Toast Alert */
+    let toastTimer;
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    /* Setup Event Listeners */
+    function setupListeners() {
+      // Top navbar controls
+      document.getElementById('btnPrev').addEventListener('click', () => updateActiveStep(currentStepIndex - 1, true));
+      document.getElementById('btnNext').addEventListener('click', () => updateActiveStep(currentStepIndex + 1, true));
+      document.getElementById('btnCopyNext').addEventListener('click', copyAndAdvance);
+      document.getElementById('btnReset').addEventListener('click', () => {
+        clearTerminal();
+        shellVirtualFiles = {};
+        shellCurrentDir = "/home/user/shellForge";
+        updateActiveStep(0, true);
+        showToast("Demo reset to Step 1");
+      });
+
+      document.getElementById('btnClearTerm').addEventListener('click', clearTerminal);
+
+      // Search filter
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim();
+        renderCards();
+      });
+
+      // Category pills
+      categoryPills.addEventListener('click', (e) => {
+        if (e.target.classList.contains('cat-pill')) {
+          document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          currentFilter = e.target.getAttribute('data-cat');
+          renderCards();
+        }
+      });
+
+      // Shell input keyboard handler (Enter, Up, Down, Ctrl+C)
+      shellInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const val = shellInput.value;
+          shellInput.value = '';
+          executeShellLine(val);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (shellHistoryList.length > 0) {
+            if (commandHistoryNavIndex === -1) {
+              commandHistoryNavIndex = shellHistoryList.length - 1;
+            } else if (commandHistoryNavIndex > 0) {
+              commandHistoryNavIndex--;
+            }
+            shellInput.value = shellHistoryList[commandHistoryNavIndex] || '';
+          }
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (commandHistoryNavIndex >= 0) {
+            commandHistoryNavIndex++;
+            if (commandHistoryNavIndex < shellHistoryList.length) {
+              shellInput.value = shellHistoryList[commandHistoryNavIndex] || '';
+            } else {
+              commandHistoryNavIndex = -1;
+              shellInput.value = '';
+            }
+          }
+        } else if (e.ctrlKey && e.key === 'c') {
+          e.preventDefault();
+          const logEntry = document.createElement('div');
+          logEntry.className = "term-log";
+          logEntry.innerHTML = `<span class="term-prompt-shell">ShellForge&gt; </span><span class="term-cmd">${escapeHtml(shellInput.value)}^C</span>`;
+          terminalLogs.appendChild(logEntry);
+          shellInput.value = '';
+          terminalScreen.scrollTop = terminalScreen.scrollHeight;
+        }
+      });
+
+      // Global keyboard navigation when not typing in shell or search
+      window.addEventListener('keydown', (e) => {
+        if (document.activeElement === searchInput) return;
+
+        // If user presses Alt+Right or Alt+Left, change steps
+        if (e.altKey && e.key === 'ArrowRight') {
+          e.preventDefault();
+          updateActiveStep(currentStepIndex + 1, true);
+        } else if (e.altKey && e.key === 'ArrowLeft') {
+          e.preventDefault();
+          updateActiveStep(currentStepIndex - 1, true);
+        }
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function escapeAttr(str) {
+      if (!str) return '';
+      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
